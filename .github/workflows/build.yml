@@ -7,11 +7,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # THIS STEP FIXES THE "LIBTINFO5" ERROR
-      - name: Install System Dependencies
+      - name: Fix Legacy Dependencies (libtinfo5)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libtinfo5 libncurses5
+          # Manually download and install the legacy packages removed in Ubuntu 24.04
+          wget http://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
+          wget http://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/libncurses5_6.3-2ubuntu0.1_amd64.deb
+          sudo apt install ./libtinfo5_6.3-2ubuntu0.1_amd64.deb ./libncurses5_6.3-2ubuntu0.1_amd64.deb
 
       - name: Build with Buildozer
         uses: digreatbrian/buildozer-action@v2
