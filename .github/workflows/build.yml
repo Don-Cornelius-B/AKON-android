@@ -1,0 +1,20 @@
+name: Build APK
+on: [push] # This triggers the build every time you push code to GitHub
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # Pulls your code from the repo
+
+      - name: Build with Buildozer
+        uses: digreatbrian/buildozer-action@v2
+        with:
+          python-version: 3.11
+          buildozer-cmd: buildozer -v android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AKON-Package
+          path: bin/*.apk # This makes the finished APK available for download
