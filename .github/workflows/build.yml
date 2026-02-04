@@ -7,13 +7,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fix Legacy Dependencies (libtinfo5)
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
-          # Manually download and install the legacy packages removed in Ubuntu 24.04
+          # Install the legacy libs we found earlier
           wget http://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
           wget http://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/libncurses5_6.3-2ubuntu0.1_amd64.deb
           sudo apt install ./libtinfo5_6.3-2ubuntu0.1_amd64.deb ./libncurses5_6.3-2ubuntu0.1_amd64.deb
+          # Install the missing compilation tools
+          sudo apt-get install -y libtool autoconf automake pkg-config libffi-dev
 
       - name: Build with Buildozer
         uses: digreatbrian/buildozer-action@v2
