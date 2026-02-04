@@ -10,12 +10,22 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          # Install the legacy libs we found earlier
+          # Fix legacy libraries for Ubuntu 24.04 (libtinfo5 and libncurses5)
           wget http://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
           wget http://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/libncurses5_6.3-2ubuntu0.1_amd64.deb
           sudo apt install ./libtinfo5_6.3-2ubuntu0.1_amd64.deb ./libncurses5_6.3-2ubuntu0.1_amd64.deb
-          # Install the missing compilation tools
-          sudo apt-get install -y libtool autoconf automake pkg-config libffi-dev
+          
+          # Install the compilation tools to fix Autoconf/Libtool errors
+          sudo apt-get install -y \
+            build-essential \
+            libltdl-dev \
+            libtool \
+            autoconf \
+            automake \
+            pkg-config \
+            libffi-dev \
+            libssl-dev \
+            python3-dev
 
       - name: Build with Buildozer
         uses: digreatbrian/buildozer-action@v2
