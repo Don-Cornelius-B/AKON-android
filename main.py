@@ -97,7 +97,7 @@ class AkonApp(App):
             stamp = datetime.datetime.now().strftime("%H:%M")
             payload = f"{self.username}: {content}"
             # Ensure this matches your current laptop IPv4 from ipconfig
-            target_ip = '192.168.1.6' 
+            target_ip = '192.168.1.5' 
             
             try:
                 self.socket_service.sendto(payload.encode('utf-8'), (target_ip, 5000))
