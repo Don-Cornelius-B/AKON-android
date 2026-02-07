@@ -3,175 +3,175 @@ import threading
 import datetime
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
-from kivy.graphics import Color, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle, Line
 from kivy.core.window import Window
 
-# --- Professional UI Styling ---
-CYBER_NAVY = (0.05, 0.08, 0.15, 1)
-GLOW_BLUE = (0, 0.75, 1, 1)
+# --- UI Theme Palette ---
+DARK_SPACE = (0.02, 0.02, 0.05, 1)  # Deep navy background
+CYBER_BLUE = (0, 0.6, 0.9, 1)      # Accent color for user and buttons
+DARK_GREY = (0.15, 0.15, 0.2, 1)   # Color for incoming message bubbles
+TEXT_WHITE = (0.9, 0.9, 0.9, 1)
 
 class AkonApp(App):
     def build(self):
-        """Builds the AKON interface and sets up mobile-specific window behavior."""
-        self.title = "AKON P2P DISCOVERY"
-        # Forces the app layout to shift up when the virtual keyboard opens
+        """Initializes the UI and enables the keyboard-aware layout."""
+        self.title = "AKON GATEWAY"
+        # Shifts the app view up so the keyboard doesn't cover the input box
         Window.softinput_mode = "below_target"
         
-        self.root_node = BoxLayout(orientation='vertical', padding=20, spacing=15)
+        self.root = AnchorLayout()
         
-        with self.root_node.canvas.before:
-            Color(*CYBER_NAVY)
-            self.bg_rect = RoundedRectangle(pos=self.root_node.pos, size=self.root_node.size)
-            self.root_node.bind(pos=self.update_ui_geometry, size=self.update_ui_geometry)
+        # Apply global background
+        with self.root.canvas.before:
+            Color(*DARK_SPACE)
+            self.bg = RoundedRectangle(pos=self.root.pos, size=self.root.size)
+            self.root.bind(pos=self.update_bg, size=self.update_bg)
 
-        # --- Login and Discovery Initialization ---
-        self.init_layout = BoxLayout(orientation='vertical', spacing=25, size_hint=(0.85, 0.45), pos_hint={'center_x': 0.5})
-        self.init_layout.add_widget(Label(
-            text="[b]AKON[/b]\nNode Discovery Active", 
-            font_size=34, 
-            markup=True, 
-            color=GLOW_BLUE, 
-            halign='center'
-        ))
+        # --- LOGIN SCREEN: Glass-Morphism Card ---
+        self.login_card = BoxLayout(orientation='vertical', padding=30, spacing=20, 
+                                    size_hint=(0.85, None), height=320)
         
-        self.id_input = TextInput(
-            hint_text="Assign Node ID", 
-            multiline=False, 
-            background_color=(1,1,1,0.08), 
-            foreground_color=(1,1,1,1),
-            padding=[15, 15]
-        )
-        
-        self.join_btn = Button(
-            text="START DISCOVERY", 
-            background_normal='', 
-            background_color=GLOW_BLUE, 
-            bold=True,
-            font_size=18
-        )
-        self.join_btn.bind(on_press=self.launch_chat_session)
-        
-        self.init_layout.add_widget(self.id_input)
-        self.init_layout.add_widget(self.join_btn)
-        self.root_node.add_widget(self.init_layout)
-        
-        return self.root_node
+        with self.login_card.canvas.before:
+            Color(1, 1, 1, 0.05) 
+            self.card_bg = RoundedRectangle(pos=self.login_card.pos, size=self.login_card.size, radius=[20,])
+            Color(*CYBER_BLUE)
+            self.card_border = Line(rounded_rectangle=[0,0,0,0,20], width=1.2)
+            self.login_card.bind(pos=self.update_card, size=self.update_card)
 
-    def update_ui_geometry(self, *args):
-        """Ensures the background color scales with the window size."""
-        self.bg_rect.pos = self.root_node.pos
-        self.bg_rect.size = self.root_node.size
+        self.login_card.add_widget(Label(text="[b]AKON[/b]\n[size=14]P2P DISCOVERY NODE[/size]", 
+                                        markup=True, halign='center', font_size=28, color=CYBER_BLUE))
+        
+        self.id_input = TextInput(hint_text="Enter Node ID", multiline=False, size_hint_y=None, height=50,
+                                  background_color=(0,0,0,0), foreground_color=TEXT_WHITE, cursor_color=CYBER_BLUE,
+                                  padding=[15, 15], hint_text_color=(0.5, 0.5, 0.5, 1))
+        
+        self.join_btn = Button(text="INITIALIZE GATEWAY", background_normal='', background_color=CYBER_BLUE,
+                               bold=True, size_hint_y=None, height=55)
+        self.join_btn.bind(on_press=self.start_session)
+        
+        self.login_card.add_widget(self.id_input)
+        self.login_card.add_widget(self.join_btn)
+        
+        self.root.add_widget(self.login_card)
+        return self.root
 
-    def launch_chat_session(self, instance):
-        """Switches UI to chat mode and initializes the networking thread."""
-        self.node_id = self.id_input.text.strip() or "Mobile_Node"
-        self.root_node.remove_widget(self.init_layout)
+    def update_bg(self, *args):
+        self.bg.pos = self.root.pos
+        self.bg.size = self.root.size
+
+    def update_card(self, instance, value):
+        self.card_bg.pos = instance.pos
+        self.card_bg.size = instance.size
+        self.card_border.rounded_rectangle = [instance.x, instance.y, instance.width, instance.height, 20]
+
+    def start_session(self, instance):
+        """Sets the Node ID and transitions to the chat dashboard."""
+        self.node_id = self.id_input.text.strip() or "Node_X"
+        self.root.remove_widget(self.login_card)
         self.setup_chat_dashboard()
-        self.start_p2p_engine()
+        self.init_p2p_engine()
 
     def setup_chat_dashboard(self):
-        """Creates the scrollable history and the keyboard-aligned input field."""
-        self.root_node.add_widget(Label(
-            text=f"ACTIVE NODE: {self.node_id}", 
-            size_hint_y=0.06, 
-            color=GLOW_BLUE, 
-            bold=True
-        ))
+        """Builds the main chat interface with directional bubbles."""
+        self.root.anchor_x = 'center'
+        self.root.anchor_y = 'top'
+        chat_main = BoxLayout(orientation='vertical', padding=[10, 20, 10, 10], spacing=10)
 
-        self.scroll_view = ScrollView(size_hint=(1, 0.84))
-        self.message_log = Label(
-            text="", 
-            markup=True, 
-            size_hint_y=None, 
-            halign='left', 
-            valign='top', 
-            padding=[20, 20]
-        )
-        self.message_log.bind(texture_size=self.message_log.setter('size'))
-        self.scroll_view.add_widget(self.message_log)
+        chat_main.add_widget(Label(text=f"ACTIVE NODE: {self.node_id} (Broadcasting)", 
+                                   size_hint_y=None, height=30, color=CYBER_BLUE, bold=True))
 
-        # Input Dock remains at the bottom, shifting with the keyboard
-        self.input_dock = BoxLayout(size_hint=(1, None), height=65, spacing=12)
-        self.msg_field = TextInput(
-            hint_text="Broadcast packet data...", 
-            multiline=False, 
-            padding=[12, 12],
-            background_color=(1,1,1,0.1),
-            foreground_color=(1,1,1,1)
-        )
-        self.shout_btn = Button(
-            text="SHOUT", 
-            size_hint_x=0.28, 
-            background_normal='', 
-            background_color=GLOW_BLUE, 
-            bold=True
-        )
-        self.shout_btn.bind(on_press=self.dispatch_broadcast)
+        self.scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
+        self.chat_list = BoxLayout(orientation='vertical', size_hint_y=None, spacing=15, padding=[5, 10])
+        self.chat_list.bind(minimum_height=self.chat_list.setter('height'))
+        self.scroll.add_widget(self.chat_list)
 
-        self.input_dock.add_widget(self.msg_field)
-        self.input_dock.add_widget(self.shout_btn)
-        
-        self.root_node.add_widget(self.scroll_view)
-        self.root_node.add_widget(self.input_dock)
+        # Message Input Area
+        dock_container = BoxLayout(size_hint_y=None, height=70, spacing=10, padding=[5, 10])
+        self.entry = TextInput(hint_text="Broadcast to neighbors...", multiline=False,
+                               background_color=(1,1,1,0.05), foreground_color=TEXT_WHITE, padding=[12, 12])
+        self.send_btn = Button(text="SHOUT", size_hint_x=0.25, background_normal='', background_color=CYBER_BLUE, bold=True)
+        self.send_btn.bind(on_press=self.send_broadcast)
 
-    def start_p2p_engine(self):
-        """Binds the socket for broadcast communication and starts the listener."""
-        self.net_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # Allows reusing the same port if the app restarts quickly
-        self.net_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # Enables sending to the broadcast address (255.255.255.255)
-        self.net_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        
+        dock_container.add_widget(self.entry)
+        dock_container.add_widget(self.send_btn)
+
+        chat_main.add_widget(self.scroll)
+        chat_main.add_widget(dock_container)
+        self.root.add_widget(chat_main)
+
+    def init_p2p_engine(self):
+        """Initializes the UDP socket for zero-config P2P broadcasting."""
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Allows for immediate port reuse and enables broadcast capability
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         try:
-            self.net_socket.bind(('', 5000))
-            threading.Thread(target=self.incoming_packet_handler, daemon=True).start()
-        except Exception as err:
-            self.post_log_entry(f"[color=ff4444]SYS_ERROR: {err}[/color]")
+            self.sock.bind(('', 5000))
+            threading.Thread(target=self.receive_loop, daemon=True).start()
+        except Exception as e:
+            self.add_message(f"Network Error: {e}", is_me=False)
 
-    def dispatch_broadcast(self, instance):
-        """Sends the message to every listener on the local network segment."""
-        msg_text = self.msg_field.text
-        if msg_text:
-            time_tag = datetime.datetime.now().strftime("%H:%M")
-            full_packet = f"{self.node_id}: {msg_text}"
-            
+    def send_broadcast(self, instance):
+        """Shouts a packet to the entire local network."""
+        val = self.entry.text
+        if val:
             try:
-                # Shout to the entire local network
-                self.net_socket.sendto(full_packet.encode('utf-8'), ('255.255.255.255', 5000))
-                self.post_log_entry(f"[b][color=33ccff]{time_tag} ME:[/color][/b]\n{msg_text}")
-                self.msg_field.text = ""
-            except Exception as err:
-                self.post_log_entry(f"[color=ff4444]FAILED_SEND: {err}[/color]")
+                # 255.255.255.255 targets every device in the WiFi range
+                self.sock.sendto(f"{self.node_id}: {val}".encode(), ('255.255.255.255', 5000))
+                self.add_message(val, is_me=True)
+                self.entry.text = ""
+            except Exception as e:
+                self.add_message(f"Transmission Error: {e}", is_me=False)
 
-    def incoming_packet_handler(self):
-        """Continuously monitors Port 5000 for incoming broadcast traffic."""
+    def receive_loop(self):
+        """Continuously monitors Port 5000 for incoming data."""
         while True:
             try:
-                raw_data, remote_addr = self.net_socket.recvfrom(1024)
-                decoded_msg = raw_data.decode('utf-8')
-                
-                # Filter out our own shouts
-                if not decoded_msg.startswith(f"{self.node_id}:"):
-                    time_tag = datetime.datetime.now().strftime("%H:%M")
-                    # Display the sender's ID or IP address
-                    sender_id = decoded_msg.split(": ", 1)[0] if ": " in decoded_msg else remote_addr[0]
-                    content = decoded_msg.split(": ", 1)[1] if ": " in decoded_msg else decoded_msg
-                    
-                    entry = f"[b][color=aaaaaa]{time_tag} {sender_id}:[/color][/b]\n{content}"
-                    Clock.schedule_once(lambda dt: self.post_log_entry(entry))
+                data, addr = self.sock.recvfrom(1024)
+                text = data.decode()
+                # Do not display our own shouts in the chat
+                if not text.startswith(f"{self.node_id}:"):
+                    sender = text.split(":")[0] if ":" in text else addr[0]
+                    content = text.split(": ", 1)[1] if ": " in text else text
+                    Clock.schedule_once(lambda dt: self.add_message(content, is_me=False, sender=sender))
             except:
                 break
 
-    def post_log_entry(self, content):
-        """Adds a new message to the history and forces an auto-scroll."""
-        self.message_log.text += content + "\n\n"
-        # Ensures the scroll view stays at the most recent message
-        Clock.schedule_once(lambda dt: setattr(self.scroll_view, 'scroll_y', 0))
+    def add_message(self, text, is_me=True, sender=""):
+        """Creates a stylized bubble and adds it to the chat flow."""
+        time_tag = datetime.datetime.now().strftime("%H:%M")
+        bubble_container = BoxLayout(orientation='vertical', size_hint=(0.75, None), spacing=2)
+        
+        # Align: Me (Right/Blue), Neighbors (Left/Grey)
+        bubble_container.pos_hint = {'right': 1} if is_me else {'left': 1}
+        bubble_color = CYBER_BLUE if is_me else DARK_GREY
+        
+        display_text = f"[b]{'Me' if is_me else sender}[/b]  [size=12]{time_tag}[/size]\n{text}"
+        msg_label = Label(text=display_text, markup=True, padding=[12, 12], size_hint_y=None, halign='left')
+        msg_label.bind(texture_size=msg_label.setter('size'))
+        
+        with msg_label.canvas.before:
+            Color(*bubble_color)
+            RoundedRectangle(pos=msg_label.pos, size=msg_label.size, radius=[15,])
+            msg_label.bind(pos=self.update_bubble, size=self.update_bubble)
+
+        bubble_container.add_widget(msg_label)
+        bubble_container.height = msg_label.texture_size[1] + 20
+        self.chat_list.add_widget(bubble_container)
+        
+        # Auto-scroll to the bottom for the newest message
+        Clock.schedule_once(lambda dt: setattr(self.scroll, 'scroll_y', 0))
+
+    def update_bubble(self, instance, value):
+        """Maintains the bubble's background alignment."""
+        instance.canvas.before.children[-1].pos = instance.pos
+        instance.canvas.before.children[-1].size = instance.size
 
 if __name__ == "__main__":
     AkonApp().run()
