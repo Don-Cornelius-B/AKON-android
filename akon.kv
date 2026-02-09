@@ -1,7 +1,9 @@
 #:import config config
 
-# --- Screen Management ---
 ScreenManager:
+    id: screen_manager
+    
+    # --- Login / Initialization Screen ---
     Screen:
         name: 'login_screen'
         AnchorLayout:
@@ -12,8 +14,49 @@ ScreenManager:
                     pos: self.pos
                     size: self.size
             
-            LoginCard: # We call the custom widget here
+            # The Glassmorphism Card
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: 0.85, None
+                height: 300
+                padding: 30
+                spacing: 20
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0.05 # Translucent overlay
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20,]
+                    Color:
+                        rgba: config.CYBER_BLUE
+                    Line:
+                        width: 1.2
+                        rounded_rectangle: (self.x, self.y, self.width, self.height, 20)
 
+                Label:
+                    text: "AKON IDENTITY"
+                    font_size: '22sp'
+                    bold: True
+                    color: config.CYBER_BLUE
+
+                TextInput:
+                    id: user_id_input
+                    hint_text: "Enter Node ID..."
+                    multiline: False
+                    write_tab: False
+                    padding: [10, 10]
+                    background_color: 1, 1, 1, 0.1
+                    foreground_color: 1, 1, 1, 1
+
+                Button:
+                    text: "INITIALIZE NODE"
+                    bold: True
+                    background_normal: ''
+                    background_color: config.CYBER_BLUE
+                    on_release: app.start_session(user_id_input.text)
+
+    # --- Main Chat / Mesh Screen ---
     Screen:
         name: 'chat_screen'
         BoxLayout:
@@ -25,14 +68,24 @@ ScreenManager:
                     pos: self.pos
                     size: self.size
 
-            # Header
-            Label:
-                text: "AKON AGNOSTIC NODE"
+            # Header Bar
+            BoxLayout:
                 size_hint_y: 0.1
-                color: config.CYBER_BLUE
-                bold: True
+                padding: [15, 0]
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0.02
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                Label:
+                    text: "AKON AGNOSTIC MESH"
+                    bold: True
+                    color: config.CYBER_BLUE
+                    halign: 'left'
+                    text_size: self.width, None
 
-            # Chat ScrollView
+            # Chat History Area
             ScrollView:
                 id: scroll_view
                 size_hint_y: 0.8
@@ -41,77 +94,68 @@ ScreenManager:
                     orientation: 'vertical'
                     size_hint_y: None
                     height: self.minimum_height
-                    padding: [10, 10]
-                    spacing: 12
+                    padding: [15, 15]
+                    spacing: 15
 
-            # Input Bar
+            # Bottom Input Bar
             BoxLayout:
                 size_hint_y: 0.1
                 padding: 10
                 spacing: 10
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0.05
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                
                 TextInput:
                     id: msg_input
+                    hint_text: "Shout to mesh..."
                     multiline: False
-                    hint_text: "Shout a packet..."
+                    write_tab: False
+                
                 Button:
                     text: "SHOUT"
-                    size_hint_x: 0.3
+                    size_hint_x: 0.25
+                    bold: True
+                    background_normal: ''
+                    background_color: config.CYBER_BLUE
                     on_release: app.send_broadcast(msg_input)
 
-# --- Templates ---
-<LoginCard@BoxLayout>:
-    orientation: 'vertical'
-    padding: 30
-    spacing: 20
-    size_hint: 0.85, None
-    height: 320
-    canvas.before:
-        Color:
-            rgba: 1, 1, 1, 0.05
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [20,]
-    
-    Label:
-        text: "INITIALIZE NODE"
-        bold: True
-        font_size: '20sp'
-    
-    TextInput:
-        id: node_name
-        hint_text: "Enter Node ID (e.g. Redmi_01)"
-        multiline: False
-    
-    Button:
-        text: "CONNECT TO MESH"
-        background_color: config.CYBER_BLUE
-        on_release: app.start_session(node_name.text)
+# --- Templates for Custom Widgets ---
 
 <MessageBubble>:
     orientation: 'vertical'
-    size_hint: 0.8, None
+    size_hint: 0.75, None
     height: self.minimum_height
-    padding: [15, 10]
+    padding: [12, 10]
+    # Anchors bubbles to right if 'is_me' is true, else left
     pos_hint: {'right': 1} if self.is_me else {'left': 1}
+    
     canvas.before:
         Color:
             rgba: config.MY_BUBBLE if self.is_me else config.THEIR_BUBBLE
         RoundedRectangle:
             pos: self.pos
             size: self.size
+            # Dynamic tail logic: bottom-right sharp for me, bottom-left sharp for others
             radius: [15, 15, (0, 15) if self.is_me else (15, 0), 15]
 
     Label:
-        text: "[b]" + self.sender + "[/b] " + self.time
+        text: "[b]" + root.sender + "[/b]  [size=12]" + root.time + "[/size]"
         markup: True
         size_hint_y: None
         height: 20
         halign: 'left'
         text_size: self.width, None
-    
+        color: config.TEXT_LIGHT
+
     Label:
-        text: self.message
+        text: root.message
         size_hint_y: None
         height: self.texture_size[1]
         text_size: self.width, None
+        halign: 'left'
+        valign: 'top'
+        color: config.TEXT_LIGHT
