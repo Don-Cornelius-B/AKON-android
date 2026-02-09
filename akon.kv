@@ -1,6 +1,64 @@
 #:import config config
-#:import Window kivy.core.window.Window
 
+# --- Screen Management ---
+ScreenManager:
+    Screen:
+        name: 'login_screen'
+        AnchorLayout:
+            canvas.before:
+                Color:
+                    rgba: config.DARK_SPACE
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            
+            LoginCard: # We call the custom widget here
+
+    Screen:
+        name: 'chat_screen'
+        BoxLayout:
+            orientation: 'vertical'
+            canvas.before:
+                Color:
+                    rgba: config.DARK_SPACE
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            # Header
+            Label:
+                text: "AKON AGNOSTIC NODE"
+                size_hint_y: 0.1
+                color: config.CYBER_BLUE
+                bold: True
+
+            # Chat ScrollView
+            ScrollView:
+                id: scroll_view
+                size_hint_y: 0.8
+                BoxLayout:
+                    id: chat_list
+                    orientation: 'vertical'
+                    size_hint_y: None
+                    height: self.minimum_height
+                    padding: [10, 10]
+                    spacing: 12
+
+            # Input Bar
+            BoxLayout:
+                size_hint_y: 0.1
+                padding: 10
+                spacing: 10
+                TextInput:
+                    id: msg_input
+                    multiline: False
+                    hint_text: "Shout a packet..."
+                Button:
+                    text: "SHOUT"
+                    size_hint_x: 0.3
+                    on_release: app.send_broadcast(msg_input)
+
+# --- Templates ---
 <LoginCard@BoxLayout>:
     orientation: 'vertical'
     padding: 30
@@ -14,52 +72,46 @@
             pos: self.pos
             size: self.size
             radius: [20,]
-        Color:
-            rgba: config.CYBER_BLUE
-        Line:
-            width: 1.2
-            rounded_rectangle: (self.x, self.y, self.width, self.height, 20)
+    
+    Label:
+        text: "INITIALIZE NODE"
+        bold: True
+        font_size: '20sp'
+    
+    TextInput:
+        id: node_name
+        hint_text: "Enter Node ID (e.g. Redmi_01)"
+        multiline: False
+    
+    Button:
+        text: "CONNECT TO MESH"
+        background_color: config.CYBER_BLUE
+        on_release: app.start_session(node_name.text)
 
 <MessageBubble>:
     orientation: 'vertical'
-    size_hint: 0.75, None
+    size_hint: 0.8, None
     height: self.minimum_height
-    padding: [10, 10]
-    spacing: 5
+    padding: [15, 10]
+    pos_hint: {'right': 1} if self.is_me else {'left': 1}
     canvas.before:
         Color:
-            rgba: config.MY_BUBBLE if root.is_me else config.THEIR_BUBBLE
+            rgba: config.MY_BUBBLE if self.is_me else config.THEIR_BUBBLE
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [15, 15, 0 if root.is_me else 15, 15 if root.is_me else 0]
+            radius: [15, 15, (0, 15) if self.is_me else (15, 0), 15]
 
     Label:
-        text: "[b]{}[/b] [size=12]{}[/size]".format(root.sender, root.time)
+        text: "[b]" + self.sender + "[/b] " + self.time
         markup: True
         size_hint_y: None
         height: 20
         halign: 'left'
         text_size: self.width, None
-        color: config.TEXT_LIGHT
-
+    
     Label:
-        text: root.message
+        text: self.message
         size_hint_y: None
         height: self.texture_size[1]
         text_size: self.width, None
-        halign: 'left'
-        valign: 'top'
-        color: config.TEXT_LIGHT
-
-# --- Main Screen Manager ---
-AnchorLayout:
-    id: root_window
-    canvas.before:
-        Color:
-            rgba: config.DARK_SPACE
-        Rectangle:
-            pos: self.pos
-            size: self.size
-
-    # The screen content is handled dynamically by main.py
