@@ -1,0 +1,22 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Buildozer and Android artifacts
+.buildozer/
+bin/
+*.spec
+!buildozer.spec
+
+# IDE and Environment
+.vscode/
+.idea/
+venv/
+.env
+.DS_Store
+Thumbs.db
+
+# Android binaries
+*.apk
+*.aab
