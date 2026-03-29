@@ -4,11 +4,6 @@ Centralized settings for UI theme and Network protocols.
 """
 
 # --- Network Settings ---
-# Standard UDP port for the mesh network
-UDP_PORT = 5000 
-# Global broadcast address for local peer discovery
-BROADCAST_ADDR = '255.255.255.255' 
-BUFFER_SIZE = 1024
 
 # --- UI Theme (RGBA) ---
 DARK_SPACE = (0.02, 0.04, 0.08, 1)     # Deep Midnight Navy

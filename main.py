@@ -7,7 +7,7 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 
 import config
-from network import AkonNetwork
+import requests
 
 KV_INTERFACE = """
 #:import config config
@@ -117,21 +117,27 @@ class AkonGateway(App):
     def build(self):
         Window.softinput_mode = "below_target"
         self.node_id = "Node_X"
-        self.net = AkonNetwork(on_message_callback=self.on_incoming)
         return Builder.load_string(KV_INTERFACE)
 
     def start_gateway(self, user_name):
         self.node_id = user_name.strip() or "Node_X"
         self.root.current = 'chat_screen'
-        if self.net.start():
-            print(f"[*] Mesh Gateway Active: {self.node_id}")
+
 
     def send_shout(self, text_input):
-        msg = text_input.text
-        if msg.strip():
+        msg = text_input.text.strip()
+
+        if msg:
             self.render_bubble(msg, self.node_id, is_me=True)
-            if self.net.broadcast(self.node_id, msg):
-                text_input.text = ""
+
+            try:
+                # 🔥 IMPORTANT: replace with your ESP32 IP later
+                url = f"http://192.168.1.100/send?msg={msg}"
+                requests.get(url)
+            except Exception as e:
+                print("ESP32 connection error:", e)
+
+        text_input.text = ""
 
     def render_bubble(self, text, sender, is_me=False):
         try:
@@ -146,15 +152,6 @@ class AkonGateway(App):
                     Clock.schedule_once(lambda dt: setattr(self.scroller, 'scroll_y', 0))
         except Exception as e:
             print(f"[!] UI Render Error: {e}")
-
-    def on_incoming(self, data, addr):
-        try:
-            if ":" in data:
-                sender, content = data.split(":", 1)
-                if sender != self.node_id:
-                    Clock.schedule_once(lambda dt: self.render_bubble(content, sender, is_me=False))
-        except:
-            pass
 
 if __name__ == "__main__":
     AkonGateway().run()
